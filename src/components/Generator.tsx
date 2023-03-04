@@ -5,7 +5,7 @@ import type { ChatMessage } from '@/types'
 import Cookies from 'js-cookie'
 
 export default () => {
-  let inputRef: HTMLInputElement
+  let inputRef: HTMLTextAreaElement
   const [messageList, setMessageList] = createSignal<ChatMessage[]>([])
   const [currentAssistantMessage, setCurrentAssistantMessage] = createSignal('')
   const [loading, setLoading] = createSignal(false)
@@ -70,6 +70,7 @@ export default () => {
         if (char) {
           setCurrentAssistantMessage(currentAssistantMessage() + char)
         }
+        window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'})
       }
       done = readerDone
     }
@@ -91,26 +92,37 @@ export default () => {
     setCurrentAssistantMessage('')
   }
 
+  const handleKeydown = (e: KeyboardEvent) => {
+    if (e.isComposing || e.shiftKey) {
+      return
+    }
+    if (e.key === 'Enter') {
+      handleButtonClick()
+    }
+  }
+
   return (
     <div my-6>
       <For each={messageList()}>{(message) => <MessageItem role={message.role} message={message.content} />}</For>
       { currentAssistantMessage() && <MessageItem role="assistant" message={currentAssistantMessage} /> }
       <Show when={!loading()} fallback={() => <div class="h-12 my-4 flex items-center justify-center bg-slate bg-op-15 text-slate rounded-sm">AI is thinking...</div>}>
         <div class="my-4 flex items-center gap-2">
-          <input
+          <textarea
             ref={inputRef!}
-            type="text"
-            id="input"
+            disabled={loading()}
+            onKeyDown={handleKeydown}
             placeholder="Enter something..."
             autocomplete='off'
-            autofocus
-            disabled={loading()}
-            onKeyDown={(e) => {
-              e.key === 'Enter' && !e.isComposing && handleButtonClick()
+            onInput={() => {
+              inputRef.style.height = 'auto';
+              inputRef.style.height = inputRef.scrollHeight + 'px';
             }}
+            rows="1"
+            autofocus
             w-full
-            px-4
-            h-12
+            px-3 py-3
+            min-h-12
+            max-h-36
             text-slate
             rounded-sm
             bg-slate
@@ -120,6 +132,7 @@ export default () => {
             focus:outline-none
             placeholder:text-slate-400
             placeholder:op-30
+            overflow-hidden
           />
           <button onClick={handleButtonClick} disabled={loading()} h-12 px-4 py-2 bg-slate bg-op-15 hover:bg-op-20 text-slate rounded-sm>
             Send
